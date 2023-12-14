@@ -29,7 +29,7 @@ class RecordQueue<T = number> {
   }
 }
 
-function solution(output = false) {
+function solution(output: number[] | null = null) {
   let startBot = -1;
   const transitions = new RecordQueue<[Type, number]>();
   const types: Record<Type, RecordQueue> = {
@@ -80,9 +80,7 @@ function solution(output = false) {
     }
   }
 
-  return (
-    types.output.get(0)[0] * types.output.get(1)[0] * types.output.get(2)[0]
-  );
+  return output!.reduce((result, i) => result * types.output.get(i)[0], 1);
 }
 
 test("part1", () => {
@@ -90,5 +88,5 @@ test("part1", () => {
 });
 
 test("part2", () => {
-  expect(solution(true)).toBe(2_666);
+  expect(solution([0, 1, 2])).toBe(2_666);
 });
