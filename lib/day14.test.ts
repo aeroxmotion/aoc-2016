@@ -1,51 +1,71 @@
 import { test, expect } from "bun:test";
 
-import { readInput } from "./utils";
+import { cacheFS, readInput } from "./utils";
 
 let input = await readInput(14);
 
-const TRIPLET_REGEX = /(.)\1{2}/;
+const TRIPLET_REGEX = /(.)\1\1/;
+const QUINTUPLET_REGEX = /(.)\1{4}/;
 
-test("part1", () => {
+async function solution(stretch = 1) {
   let i = 0;
   let keys = 0;
+  let maxI = -Infinity;
 
   const N = 1000;
-  const hashes: string[] = new Array();
-  const candidates: string[] = [];
+  const triplets: Record<string, number[]> = {};
+
+  // Pre-fill with empty indexes
+  for (let i = 0; i < 16; i++) {
+    triplets[i.toString(16)] = [];
+  }
+
+  const cache = await cacheFS(`day14_${stretch}`);
 
   root: while (true) {
-    let hash = `${input}${i}`;
+    const initial = `${input}${i}`;
 
-    for (let x = 0; x <= 2016; x++) {
-      hash = hashes[i] = new Bun.CryptoHasher("md5").update(hash).digest("hex");
-    }
+    const hash = cache(initial, () => {
+      let _hash = initial;
 
-    const triplet = TRIPLET_REGEX.exec(hash)?.[1];
+      for (let j = 0; j < stretch; j++) {
+        _hash = new Bun.CryptoHasher("md5").update(_hash).digest("hex");
+      }
 
-    if (triplet) {
-      candidates[i] = triplet;
-    }
+      return _hash;
+    });
 
-    const I = i - N;
-    const candidate = candidates[I];
+    const quintuplet = QUINTUPLET_REGEX.exec(hash)?.[1];
 
-    if (candidate) {
-      const quintuplet = candidate.repeat(5);
+    if (!quintuplet) {
+      const triplet = TRIPLET_REGEX.exec(hash)?.[1];
 
-      for (let j = 1; j < N; j++) {
-        if (hashes[I + j].includes(quintuplet)) {
-          if (++keys >= 64) {
+      triplet && triplets[triplet].push(i);
+    } else {
+      for (const index of triplets[quintuplet]) {
+        if (i - index < N) {
+          keys++;
+          maxI = Math.max(maxI, index);
+
+          if (keys >= 64) {
             break root;
           }
-
-          break;
         }
       }
+
+      triplets[quintuplet] = [i];
     }
 
     i++;
   }
 
-  console.log("I:", i - 1000);
+  return maxI;
+}
+
+test("part1", async () => {
+  expect(await solution(1)).toBe(23_769);
+});
+
+test("part2", async () => {
+  expect(await solution(2_017)).toBe(20_606);
 });
