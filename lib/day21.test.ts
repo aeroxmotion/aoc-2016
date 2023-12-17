@@ -4,27 +4,44 @@ import { readInput } from "./utils";
 
 let input = await readInput(21);
 
-function rotate<T>(arr: T[], times: number) {
+function rotate(arr: string[], times: number) {
   const L = arr.length;
-  const N = L + times;
+  const T = Math.abs(times);
+  const N = L + T;
 
-  const buf = new Array<T>(L);
+  const buf = new Array<string>(L);
 
-  for (let i = times; i < N; i++) {
+  for (let i = T; i < N; i++) {
     const I = i % L;
-    const J = i - times;
+    const J = (i - times) % L;
 
     buf[I] = arr[I];
     arr[I] = buf[J] || arr[J];
   }
+
+  return arr;
 }
 
-test("part1", () => {
-  let result: string[] = "abcdefgh".split("");
+function rotateLetter(arr: string[], letter: string) {
+  const i = arr.indexOf(letter);
+
+  rotate(arr, i + 1 + +(i >= 4));
+
+  return arr;
+}
+
+function solution(initial: string, revert: boolean) {
+  const lines = input.split("\n");
+
+  let result: string[] = initial.split("");
 
   const pos = (i: string) => (isNaN(+i) ? result.indexOf(i) : +i);
 
-  for (const line of input.split("\n")) {
+  if (revert) {
+    lines.reverse();
+  }
+
+  for (const line of lines) {
     const ins = line.split(" ");
 
     switch (ins[0]) {
@@ -35,7 +52,7 @@ test("part1", () => {
         break;
 
       case "move":
-        const [from, to] = [+ins[2], +ins[5]];
+        const [from, to] = [+ins[revert ? 5 : 2], +ins[revert ? 2 : 5]];
 
         result.splice(to, 0, ...result.splice(from, 1));
         break;
@@ -53,17 +70,33 @@ test("part1", () => {
         break;
 
       case "rotate":
-        // based on letter position...
-        if (ins[1] === "based") {
-          const index = result.indexOf(ins[6]);
-          rotate(result, index + 1 + +(index >= 4));
-        } else if (ins[1] === "right") {
-          rotate(result, +ins[2]);
+        if (ins[1] !== "based") {
+          rotate(
+            result,
+            (ins[1] === "right" ? !revert : revert) ? +ins[2] : -ins[2],
+          );
+        } else if (!revert) {
+          rotateLetter(result, ins[6]);
         } else {
-          // TODO
-        }
+          const l = ins[6];
+          const target = result.join("");
 
+          while (rotateLetter(result.slice(), l).join("") !== target) {
+            // Keep rotating left until we found a matching string
+            rotate(result, -1);
+          }
+        }
         break;
     }
   }
+
+  return result.join("");
+}
+
+test("part1", () => {
+  expect(solution("abcdefgh", false)).toBe("hcdefbag");
+});
+
+test("part2", () => {
+  expect(solution("fbgdceah", true)).toBe("fbhaegdc");
 });
