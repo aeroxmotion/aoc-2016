@@ -6,41 +6,40 @@ let input = await readInput(20);
 
 type Range = [start: number, end: number];
 
-const MAX_32 = 9;
+const MAX_32 = 4_294_967_295;
 
 function solution(total: boolean) {
-  const ranges: Range[] = [];
-  const bounds: number[] = [];
+  const ranges = input
+    .split("\n")
+    .map((line) => {
+      const [start, end] = line.split("-");
 
-  for (const line of input.split("\n")) {
-    const [start, end] = line.split("-").map(Number);
-    const nextStart = start - 1;
-    const nextEnd = end + 1;
+      return [+start, +end];
+    })
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1]) as Range[];
 
-    ranges.push([start, end]);
+  let i = 0;
+  let ip = 0;
+  let sum = 0;
 
-    if (nextStart >= 0) {
-      bounds.push(nextStart);
-    }
+  while (ip < MAX_32 && i < ranges.length) {
+    const [start, end] = ranges[i];
 
-    if (nextEnd <= MAX_32) {
-      bounds.push(nextEnd);
-    }
-  }
-
-  const result: number[] = [];
-
-  root: for (const bound of bounds) {
-    for (const [start, end] of ranges) {
-      if (bound >= start && bound <= end) {
-        continue root;
+    if (ip < start) {
+      if (!total) {
+        return ip;
       }
-    }
 
-    result.push(bound);
+      sum += start - ip;
+      ip = start;
+    } else if (ip > end) {
+      i++;
+    } else {
+      ip = end + 1;
+    }
   }
 
-  return total ? result.length : Math.min(...result);
+  return total ? sum || MAX_32 - ip + 1 : ip;
 }
 
 test("part1", () => {

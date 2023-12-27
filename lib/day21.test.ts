@@ -4,84 +4,61 @@ import { readInput } from "./utils";
 
 let input = await readInput(21);
 
-function rotate(arr: string[], times: number) {
-  const L = arr.length;
-  const T = Math.abs(times);
-  const N = L + T;
+function rotate<T>(arr: T[], times: number) {
+  const len = arr.length;
 
-  const buf = new Array<string>(L);
-
-  for (let i = T; i < N; i++) {
-    const I = i % L;
-    const J = (i - times) % L;
-
-    buf[I] = arr[I];
-    arr[I] = buf[J] || arr[J];
-  }
+  arr.push(...arr.splice(0, ((-times % len) + len) % len));
 
   return arr;
 }
 
-function rotateLetter(arr: string[], letter: string) {
-  const i = arr.indexOf(letter);
+function rotateBy<T>(arr: T[], value: T) {
+  const i = arr.indexOf(value);
 
-  rotate(arr, i + 1 + +(i >= 4));
-
-  return arr;
+  return rotate(arr, i + 1 + +(i >= 4));
 }
 
 function solution(initial: string, revert: boolean) {
   const lines = input.split("\n");
-
-  let result: string[] = initial.split("");
+  const result = initial.split("");
 
   const pos = (i: string) => (isNaN(+i) ? result.indexOf(i) : +i);
+  const swap = (i: number, j: number) =>
+    ([result[i], result[j]] = [result[j], result[i]]);
 
   if (revert) {
     lines.reverse();
   }
 
   for (const line of lines) {
-    const ins = line.split(" ");
+    const [_0, _1, _2, _3, _4, _5, _6] = line.split(" ");
 
-    switch (ins[0]) {
+    switch (_0) {
       case "swap":
-        const [a, b] = [pos(ins[2]), pos(ins[5])];
-
-        [result[a], result[b]] = [result[b], result[a]];
+        swap(pos(_2), pos(_5));
         break;
 
       case "move":
-        const [from, to] = [+ins[revert ? 5 : 2], +ins[revert ? 2 : 5]];
+        const [from, to] = [+(revert ? _5 : _2), +(revert ? _2 : _5)];
 
         result.splice(to, 0, ...result.splice(from, 1));
         break;
 
       case "reverse":
-        const [start, end] = [+ins[2], +ins[4]];
-        const diff = (end - start) / 2;
-
-        for (let i = 0; i <= diff; i++) {
-          const left = start + i;
-          const right = end - i;
-
-          [result[left], result[right]] = [result[right], result[left]];
+        for (let i = +_2, j = +_4; i < j; i++, j--) {
+          swap(i, j);
         }
         break;
 
       case "rotate":
-        if (ins[1] !== "based") {
-          rotate(
-            result,
-            (ins[1] === "right" ? !revert : revert) ? +ins[2] : -ins[2],
-          );
+        if (_1 !== "based") {
+          rotate(result, (_1 === "right" ? !revert : revert) ? +_2 : -_2);
         } else if (!revert) {
-          rotateLetter(result, ins[6]);
+          rotateBy(result, _6);
         } else {
-          const l = ins[6];
           const target = result.join("");
 
-          while (rotateLetter(result.slice(), l).join("") !== target) {
+          while (rotateBy(result.slice(), _6).join("") !== target) {
             // Keep rotating left until we found a matching string
             rotate(result, -1);
           }
